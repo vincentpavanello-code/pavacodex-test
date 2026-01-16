@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staffing Formateurs</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>📚 Staffing Formateurs</h1>
+        <p class="subtitle">Gérez vos formateurs et vos besoins de formation</p>
+    </header>
+
+    <nav class="tabs">
+        <button class="tab active" data-tab="formateurs">👥 Formateurs</button>
+        <button class="tab" data-tab="besoins">📋 Besoins</button>
+        <button class="tab" data-tab="staffing">🔗 Staffing</button>
+    </nav>
+
+    <main>
+        <!-- ONGLET FORMATEURS -->
+        <section id="formateurs" class="tab-content active">
+            <div class="section-header">
+                <h2>Gestion des Formateurs</h2>
+                <button class="btn-primary" onclick="openModal('modal-formateur')">+ Ajouter un formateur</button>
+            </div>
+
+            <div id="liste-formateurs" class="cards-container">
+                <!-- Les formateurs seront affichés ici -->
+            </div>
+        </section>
+
+        <!-- ONGLET BESOINS -->
+        <section id="besoins" class="tab-content">
+            <div class="section-header">
+                <h2>Besoins de Formation</h2>
+                <button class="btn-primary" onclick="openModal('modal-besoin')">+ Créer un besoin</button>
+            </div>
+
+            <div id="liste-besoins" class="cards-container">
+                <!-- Les besoins seront affichés ici -->
+            </div>
+        </section>
+
+        <!-- ONGLET STAFFING -->
+        <section id="staffing" class="tab-content">
+            <div class="section-header">
+                <h2>Affectations</h2>
+            </div>
+
+            <div class="staffing-container">
+                <div class="staffing-panel">
+                    <h3>Besoins non affectés</h3>
+                    <div id="besoins-non-affectes" class="staffing-list">
+                        <!-- Besoins sans formateur -->
+                    </div>
+                </div>
+
+                <div class="staffing-panel">
+                    <h3>Besoins affectés</h3>
+                    <div id="besoins-affectes" class="staffing-list">
+                        <!-- Besoins avec formateur -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL FORMATEUR -->
+    <div id="modal-formateur" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('modal-formateur')">&times;</span>
+            <h2 id="modal-formateur-title">Ajouter un formateur</h2>
+            <form id="form-formateur" onsubmit="saveFormateur(event)">
+                <input type="hidden" id="formateur-id">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="formateur-prenom">Prénom *</label>
+                        <input type="text" id="formateur-prenom" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="formateur-nom">Nom *</label>
+                        <input type="text" id="formateur-nom" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="formateur-email">Email *</label>
+                        <input type="email" id="formateur-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="formateur-telephone">Téléphone</label>
+                        <input type="tel" id="formateur-telephone">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="formateur-specialites">Spécialités (séparées par des virgules)</label>
+                    <input type="text" id="formateur-specialites" placeholder="Ex: Management, Excel, Communication">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="formateur-tarif">Tarif journalier (€)</label>
+                        <input type="number" id="formateur-tarif" min="0" step="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="formateur-experience">Années d'expérience</label>
+                        <input type="number" id="formateur-experience" min="0">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="formateur-localisation">Localisation (ville)</label>
+                    <input type="text" id="formateur-localisation" placeholder="Ex: Paris">
+                </div>
+
+                <div class="form-group">
+                    <label for="formateur-notes">Notes / Commentaires</label>
+                    <textarea id="formateur-notes" rows="3" placeholder="Informations complémentaires..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('modal-formateur')">Annuler</button>
+                    <button type="submit" class="btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL BESOIN -->
+    <div id="modal-besoin" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('modal-besoin')">&times;</span>
+            <h2 id="modal-besoin-title">Créer un besoin de formation</h2>
+            <form id="form-besoin" onsubmit="saveBesoin(event)">
+                <input type="hidden" id="besoin-id">
+
+                <div class="form-group">
+                    <label for="besoin-sujet">Sujet de la formation *</label>
+                    <input type="text" id="besoin-sujet" required placeholder="Ex: Formation Excel avancé">
+                </div>
+
+                <div class="form-group">
+                    <label for="besoin-client">Nom du client *</label>
+                    <input type="text" id="besoin-client" required placeholder="Ex: Société ABC">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="besoin-date">Date *</label>
+                        <input type="date" id="besoin-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="besoin-duree">Durée *</label>
+                        <select id="besoin-duree" required>
+                            <option value="">-- Choisir --</option>
+                            <option value="1h">1 heure</option>
+                            <option value="demi-journee">Demi-journée</option>
+                            <option value="journee">1 journée</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="besoin-modalite">Modalité *</label>
+                    <select id="besoin-modalite" required onchange="toggleVille()">
+                        <option value="">-- Choisir --</option>
+                        <option value="distance">À distance</option>
+                        <option value="presentiel">En présentiel</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="groupe-ville" style="display: none;">
+                    <label for="besoin-ville">Ville *</label>
+                    <input type="text" id="besoin-ville" placeholder="Ex: Lyon">
+                </div>
+
+                <div class="form-group">
+                    <label for="besoin-notes">Notes</label>
+                    <textarea id="besoin-notes" rows="2" placeholder="Informations complémentaires..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('modal-besoin')">Annuler</button>
+                    <button type="submit" class="btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL AFFECTATION -->
+    <div id="modal-affectation" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('modal-affectation')">&times;</span>
+            <h2>Affecter un formateur</h2>
+            <div id="affectation-besoin-info"></div>
+            <form id="form-affectation" onsubmit="saveAffectation(event)">
+                <input type="hidden" id="affectation-besoin-id">
+
+                <div class="form-group">
+                    <label for="affectation-formateur">Choisir un formateur disponible *</label>
+                    <select id="affectation-formateur" required>
+                        <option value="">-- Sélectionner --</option>
+                    </select>
+                </div>
+
+                <div id="formateur-indisponible-msg" class="warning-message" style="display: none;">
+                    ⚠️ Ce formateur a déjà une formation ce jour-là
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('modal-affectation')">Annuler</button>
+                    <button type="submit" class="btn-primary">Affecter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>Staffing Formateurs v1.0 - Les données sont sauvegardées dans votre navigateur</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
