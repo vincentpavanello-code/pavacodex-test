@@ -26,9 +26,31 @@
                 <button class="btn-primary" onclick="openModal('modal-formateur')">+ Ajouter un formateur</button>
             </div>
 
+            <!-- FILTRES FORMATEURS -->
+            <div class="filters-bar">
+                <div class="filter-group">
+                    <input type="text" id="filter-formateur-search" placeholder="Rechercher un formateur..." class="filter-input search-input" oninput="applyFiltersFormateurs()">
+                </div>
+                <div class="filter-group">
+                    <select id="filter-formateur-specialite" class="filter-select" onchange="applyFiltersFormateurs()">
+                        <option value="">Toutes les spécialités</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <select id="filter-formateur-localisation" class="filter-select" onchange="applyFiltersFormateurs()">
+                        <option value="">Toutes les villes</option>
+                    </select>
+                </div>
+                <button class="btn-reset" onclick="resetFiltersFormateurs()">Réinitialiser</button>
+            </div>
+
+            <div class="results-info" id="formateurs-count"></div>
+
             <div id="liste-formateurs" class="cards-container">
                 <!-- Les formateurs seront affichés ici -->
             </div>
+
+            <div id="pagination-formateurs" class="pagination"></div>
         </section>
 
         <!-- ONGLET BESOINS -->
@@ -38,9 +60,48 @@
                 <button class="btn-primary" onclick="openModal('modal-besoin')">+ Créer un besoin</button>
             </div>
 
+            <!-- FILTRES BESOINS -->
+            <div class="filters-bar">
+                <div class="filter-group">
+                    <input type="text" id="filter-besoin-search" placeholder="Rechercher..." class="filter-input search-input" oninput="applyFiltersBesoins()">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Du</label>
+                    <input type="date" id="filter-besoin-date-debut" class="filter-input" onchange="applyFiltersBesoins()">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Au</label>
+                    <input type="date" id="filter-besoin-date-fin" class="filter-input" onchange="applyFiltersBesoins()">
+                </div>
+                <div class="filter-group">
+                    <select id="filter-besoin-statut" class="filter-select" onchange="applyFiltersBesoins()">
+                        <option value="">Tous les statuts</option>
+                        <option value="en-attente">En attente</option>
+                        <option value="affecte">Affecté</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <select id="filter-besoin-modalite" class="filter-select" onchange="applyFiltersBesoins()">
+                        <option value="">Toutes modalités</option>
+                        <option value="distance">À distance</option>
+                        <option value="presentiel">Présentiel</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <select id="filter-besoin-client" class="filter-select" onchange="applyFiltersBesoins()">
+                        <option value="">Tous les clients</option>
+                    </select>
+                </div>
+                <button class="btn-reset" onclick="resetFiltersBesoins()">Réinitialiser</button>
+            </div>
+
+            <div class="results-info" id="besoins-count"></div>
+
             <div id="liste-besoins" class="cards-container">
                 <!-- Les besoins seront affichés ici -->
             </div>
+
+            <div id="pagination-besoins" class="pagination"></div>
         </section>
 
         <!-- ONGLET STAFFING -->

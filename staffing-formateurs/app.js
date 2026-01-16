@@ -8,6 +8,13 @@
 let formateurs = JSON.parse(localStorage.getItem('formateurs')) || [];
 let besoins = JSON.parse(localStorage.getItem('besoins')) || [];
 
+// Pagination
+const ITEMS_PER_PAGE = 9;
+let currentPageFormateurs = 1;
+let currentPageBesoins = 1;
+let filteredFormateurs = [];
+let filteredBesoins = [];
+
 // Sauvegarder dans localStorage
 function saveData() {
     localStorage.setItem('formateurs', JSON.stringify(formateurs));
@@ -70,6 +77,190 @@ document.querySelectorAll('.modal').forEach(modal => {
     });
 });
 
+// ==================== FILTRES FORMATEURS ====================
+
+function updateFilterOptionsFormateurs() {
+    // Mettre à jour les options de spécialités
+    const specialitesSet = new Set();
+    formateurs.forEach(f => {
+        f.specialites.forEach(s => specialitesSet.add(s));
+    });
+    const selectSpecialite = document.getElementById('filter-formateur-specialite');
+    const currentSpecialite = selectSpecialite.value;
+    selectSpecialite.innerHTML = '<option value="">Toutes les spécialités</option>';
+    [...specialitesSet].sort().forEach(s => {
+        selectSpecialite.innerHTML += `<option value="${s}" ${s === currentSpecialite ? 'selected' : ''}>${s}</option>`;
+    });
+
+    // Mettre à jour les options de localisations
+    const localisationsSet = new Set();
+    formateurs.forEach(f => {
+        if (f.localisation) localisationsSet.add(f.localisation);
+    });
+    const selectLocalisation = document.getElementById('filter-formateur-localisation');
+    const currentLocalisation = selectLocalisation.value;
+    selectLocalisation.innerHTML = '<option value="">Toutes les villes</option>';
+    [...localisationsSet].sort().forEach(l => {
+        selectLocalisation.innerHTML += `<option value="${l}" ${l === currentLocalisation ? 'selected' : ''}>${l}</option>`;
+    });
+}
+
+function applyFiltersFormateurs() {
+    const search = document.getElementById('filter-formateur-search').value.toLowerCase().trim();
+    const specialite = document.getElementById('filter-formateur-specialite').value;
+    const localisation = document.getElementById('filter-formateur-localisation').value;
+
+    filteredFormateurs = formateurs.filter(f => {
+        // Recherche texte
+        const matchSearch = !search ||
+            f.prenom.toLowerCase().includes(search) ||
+            f.nom.toLowerCase().includes(search) ||
+            f.email.toLowerCase().includes(search) ||
+            (f.telephone && f.telephone.includes(search)) ||
+            f.specialites.some(s => s.toLowerCase().includes(search));
+
+        // Filtre spécialité
+        const matchSpecialite = !specialite || f.specialites.includes(specialite);
+
+        // Filtre localisation
+        const matchLocalisation = !localisation || f.localisation === localisation;
+
+        return matchSearch && matchSpecialite && matchLocalisation;
+    });
+
+    currentPageFormateurs = 1;
+    renderFormateurs();
+}
+
+function resetFiltersFormateurs() {
+    document.getElementById('filter-formateur-search').value = '';
+    document.getElementById('filter-formateur-specialite').value = '';
+    document.getElementById('filter-formateur-localisation').value = '';
+    applyFiltersFormateurs();
+}
+
+// ==================== FILTRES BESOINS ====================
+
+function updateFilterOptionsBesoins() {
+    // Mettre à jour les options de clients
+    const clientsSet = new Set();
+    besoins.forEach(b => {
+        if (b.client) clientsSet.add(b.client);
+    });
+    const selectClient = document.getElementById('filter-besoin-client');
+    const currentClient = selectClient.value;
+    selectClient.innerHTML = '<option value="">Tous les clients</option>';
+    [...clientsSet].sort().forEach(c => {
+        selectClient.innerHTML += `<option value="${c}" ${c === currentClient ? 'selected' : ''}>${c}</option>`;
+    });
+}
+
+function applyFiltersBesoins() {
+    const search = document.getElementById('filter-besoin-search').value.toLowerCase().trim();
+    const dateDebut = document.getElementById('filter-besoin-date-debut').value;
+    const dateFin = document.getElementById('filter-besoin-date-fin').value;
+    const statut = document.getElementById('filter-besoin-statut').value;
+    const modalite = document.getElementById('filter-besoin-modalite').value;
+    const client = document.getElementById('filter-besoin-client').value;
+
+    filteredBesoins = besoins.filter(b => {
+        // Recherche texte
+        const matchSearch = !search ||
+            b.sujet.toLowerCase().includes(search) ||
+            b.client.toLowerCase().includes(search) ||
+            (b.ville && b.ville.toLowerCase().includes(search));
+
+        // Filtre date début
+        const matchDateDebut = !dateDebut || b.date >= dateDebut;
+
+        // Filtre date fin
+        const matchDateFin = !dateFin || b.date <= dateFin;
+
+        // Filtre statut
+        let matchStatut = true;
+        if (statut === 'en-attente') {
+            matchStatut = !b.formateurId;
+        } else if (statut === 'affecte') {
+            matchStatut = !!b.formateurId;
+        }
+
+        // Filtre modalité
+        const matchModalite = !modalite || b.modalite === modalite;
+
+        // Filtre client
+        const matchClient = !client || b.client === client;
+
+        return matchSearch && matchDateDebut && matchDateFin && matchStatut && matchModalite && matchClient;
+    });
+
+    currentPageBesoins = 1;
+    renderBesoins();
+}
+
+function resetFiltersBesoins() {
+    document.getElementById('filter-besoin-search').value = '';
+    document.getElementById('filter-besoin-date-debut').value = '';
+    document.getElementById('filter-besoin-date-fin').value = '';
+    document.getElementById('filter-besoin-statut').value = '';
+    document.getElementById('filter-besoin-modalite').value = '';
+    document.getElementById('filter-besoin-client').value = '';
+    applyFiltersBesoins();
+}
+
+// ==================== PAGINATION ====================
+
+function renderPagination(containerId, currentPage, totalItems, onPageChange) {
+    const container = document.getElementById(containerId);
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+
+    // Bouton précédent
+    html += `<button class="pagination-btn" onclick="${onPageChange}(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>← Précédent</button>`;
+
+    // Pages
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+
+    if (startPage > 1) {
+        html += `<button class="pagination-btn" onclick="${onPageChange}(1)">1</button>`;
+        if (startPage > 2) html += `<span class="pagination-info">...</span>`;
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="${onPageChange}(${i})">${i}</button>`;
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) html += `<span class="pagination-info">...</span>`;
+        html += `<button class="pagination-btn" onclick="${onPageChange}(${totalPages})">${totalPages}</button>`;
+    }
+
+    // Bouton suivant
+    html += `<button class="pagination-btn" onclick="${onPageChange}(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Suivant →</button>`;
+
+    container.innerHTML = html;
+}
+
+function goToPageFormateurs(page) {
+    currentPageFormateurs = page;
+    renderFormateurs();
+    // Scroll vers le haut de la liste
+    document.getElementById('liste-formateurs').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function goToPageBesoins(page) {
+    currentPageBesoins = page;
+    renderBesoins();
+    // Scroll vers le haut de la liste
+    document.getElementById('liste-besoins').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 // ==================== FORMATEURS ====================
 
 function saveFormateur(event) {
@@ -101,7 +292,8 @@ function saveFormateur(event) {
     }
 
     saveData();
-    renderFormateurs();
+    updateFilterOptionsFormateurs();
+    applyFiltersFormateurs();
     closeModal('modal-formateur');
 }
 
@@ -143,25 +335,46 @@ function deleteFormateur(id) {
 
     formateurs = formateurs.filter(f => f.id !== id);
     saveData();
-    renderFormateurs();
+    updateFilterOptionsFormateurs();
+    applyFiltersFormateurs();
     renderStaffing();
 }
 
 function renderFormateurs() {
     const container = document.getElementById('liste-formateurs');
+    const countContainer = document.getElementById('formateurs-count');
 
-    if (formateurs.length === 0) {
+    // Afficher le compteur
+    const total = formateurs.length;
+    const filtered = filteredFormateurs.length;
+    if (total === 0) {
+        countContainer.innerHTML = '';
+    } else if (filtered === total) {
+        countContainer.innerHTML = `<strong>${total}</strong> formateur${total > 1 ? 's' : ''}`;
+    } else {
+        countContainer.innerHTML = `<strong>${filtered}</strong> sur ${total} formateur${total > 1 ? 's' : ''}`;
+    }
+
+    if (filteredFormateurs.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon">👤</div>
-                <p>Aucun formateur pour l'instant</p>
-                <p>Cliquez sur "+ Ajouter un formateur" pour commencer</p>
+                ${formateurs.length === 0
+                    ? '<p>Aucun formateur pour l\'instant</p><p>Cliquez sur "+ Ajouter un formateur" pour commencer</p>'
+                    : '<p>Aucun formateur ne correspond à vos critères</p><p>Modifiez vos filtres ou réinitialisez</p>'
+                }
             </div>
         `;
+        document.getElementById('pagination-formateurs').innerHTML = '';
         return;
     }
 
-    container.innerHTML = formateurs.map(f => `
+    // Pagination
+    const startIndex = (currentPageFormateurs - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const formateursPage = filteredFormateurs.slice(startIndex, endIndex);
+
+    container.innerHTML = formateursPage.map(f => `
         <div class="card">
             <div class="card-header">
                 <div>
@@ -187,6 +400,9 @@ function renderFormateurs() {
             </div>
         </div>
     `).join('');
+
+    // Pagination
+    renderPagination('pagination-formateurs', currentPageFormateurs, filteredFormateurs.length, 'goToPageFormateurs');
 }
 
 // ==================== BESOINS ====================
@@ -234,7 +450,8 @@ function saveBesoin(event) {
     }
 
     saveData();
-    renderBesoins();
+    updateFilterOptionsBesoins();
+    applyFiltersBesoins();
     renderStaffing();
     closeModal('modal-besoin');
 }
@@ -263,12 +480,18 @@ function deleteBesoin(id) {
 
     besoins = besoins.filter(b => b.id !== id);
     saveData();
-    renderBesoins();
+    updateFilterOptionsBesoins();
+    applyFiltersBesoins();
     renderStaffing();
 }
 
 function formatDate(dateStr) {
     const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+    return new Date(dateStr).toLocaleDateString('fr-FR', options);
+}
+
+function formatDateShort(dateStr) {
+    const options = { day: 'numeric', month: 'short', year: 'numeric' };
     return new Date(dateStr).toLocaleDateString('fr-FR', options);
 }
 
@@ -283,22 +506,42 @@ function formatDuree(duree) {
 
 function renderBesoins() {
     const container = document.getElementById('liste-besoins');
+    const countContainer = document.getElementById('besoins-count');
 
-    if (besoins.length === 0) {
+    // Afficher le compteur
+    const total = besoins.length;
+    const filtered = filteredBesoins.length;
+    if (total === 0) {
+        countContainer.innerHTML = '';
+    } else if (filtered === total) {
+        countContainer.innerHTML = `<strong>${total}</strong> besoin${total > 1 ? 's' : ''}`;
+    } else {
+        countContainer.innerHTML = `<strong>${filtered}</strong> sur ${total} besoin${total > 1 ? 's' : ''}`;
+    }
+
+    if (filteredBesoins.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon">📋</div>
-                <p>Aucun besoin de formation pour l'instant</p>
-                <p>Cliquez sur "+ Créer un besoin" pour commencer</p>
+                ${besoins.length === 0
+                    ? '<p>Aucun besoin de formation pour l\'instant</p><p>Cliquez sur "+ Créer un besoin" pour commencer</p>'
+                    : '<p>Aucun besoin ne correspond à vos critères</p><p>Modifiez vos filtres ou réinitialisez</p>'
+                }
             </div>
         `;
+        document.getElementById('pagination-besoins').innerHTML = '';
         return;
     }
 
     // Trier par date
-    const besoinsTries = [...besoins].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const besoinsTries = [...filteredBesoins].sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    container.innerHTML = besoinsTries.map(b => {
+    // Pagination
+    const startIndex = (currentPageBesoins - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const besoinsPage = besoinsTries.slice(startIndex, endIndex);
+
+    container.innerHTML = besoinsPage.map(b => {
         const formateur = b.formateurId ? formateurs.find(f => f.id === b.formateurId) : null;
 
         return `
@@ -334,6 +577,9 @@ function renderBesoins() {
             </div>
         `;
     }).join('');
+
+    // Pagination
+    renderPagination('pagination-besoins', currentPageBesoins, filteredBesoins.length, 'goToPageBesoins');
 }
 
 // ==================== STAFFING ====================
@@ -397,7 +643,7 @@ function saveAffectation(event) {
     if (besoin) {
         besoin.formateurId = formateurId;
         saveData();
-        renderBesoins();
+        applyFiltersBesoins();
         renderStaffing();
     }
 
@@ -411,7 +657,7 @@ function removeAffectation(besoinId) {
     if (besoin) {
         besoin.formateurId = null;
         saveData();
-        renderBesoins();
+        applyFiltersBesoins();
         renderStaffing();
     }
 }
@@ -440,7 +686,7 @@ function renderStaffing() {
                     </button>
                 </div>
                 <div class="staffing-item-details">
-                    ${b.client} • ${formatDate(b.date)} • ${formatDuree(b.duree)}<br>
+                    ${b.client} • ${formatDateShort(b.date)} • ${formatDuree(b.duree)}<br>
                     ${b.modalite === 'distance' ? '💻 À distance' : `📍 ${b.ville}`}
                 </div>
             </div>
@@ -466,7 +712,7 @@ function renderStaffing() {
                         </button>
                     </div>
                     <div class="staffing-item-details">
-                        ${b.client} • ${formatDate(b.date)} • ${formatDuree(b.duree)}<br>
+                        ${b.client} • ${formatDateShort(b.date)} • ${formatDuree(b.duree)}<br>
                         ${b.modalite === 'distance' ? '💻 À distance' : `📍 ${b.ville}`}
                     </div>
                     ${formateur ? `
@@ -485,6 +731,15 @@ function renderStaffing() {
 
 // Afficher les données au chargement
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialiser les filtres
+    updateFilterOptionsFormateurs();
+    updateFilterOptionsBesoins();
+
+    // Initialiser les listes filtrées
+    filteredFormateurs = [...formateurs];
+    filteredBesoins = [...besoins];
+
+    // Afficher
     renderFormateurs();
     renderBesoins();
     renderStaffing();
