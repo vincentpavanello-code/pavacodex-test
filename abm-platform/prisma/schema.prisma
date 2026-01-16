@@ -1,0 +1,267 @@
+// Schéma de base de données pour la plateforme ABM Mister IA
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Entreprises ciblées
+model Company {
+  id          String    @id @default(cuid())
+  name        String
+  website     String?
+  industry    String?
+  size        String?   // "1-50", "51-200", "201-500", "501-1000", "1000+"
+  description String?
+  linkedinUrl String?
+
+  // Statut ABM
+  status      CompanyStatus @default(IDENTIFIED)
+  priority    Priority      @default(MEDIUM)
+
+  // Notes et suivi
+  notes       String?
+
+  // Relations
+  contacts    Contact[]
+  campaigns   CampaignCompany[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Contacts dans les entreprises
+model Contact {
+  id              String    @id @default(cuid())
+  firstName       String
+  lastName        String
+  email           String?
+  phone           String?
+  jobTitle        String?   // "Responsable Formation", "DRH", "L&D Manager", etc.
+  department      String?   // "RH", "Formation", "Direction", etc.
+  linkedinUrl     String?
+
+  // Statut du contact
+  status          ContactStatus @default(NEW)
+  isDecisionMaker Boolean       @default(false)
+
+  // Scoring
+  engagementScore Int       @default(0)  // 0-100
+
+  // Notes
+  notes           String?
+
+  // Relations
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       String
+
+  // Historique des interactions
+  interactions    Interaction[]
+  emailsSent      EmailLog[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// Historique des interactions (emails, appels, LinkedIn, etc.)
+model Interaction {
+  id          String          @id @default(cuid())
+  type        InteractionType
+  channel     Channel
+  subject     String?
+  content     String?
+
+  // Pour LinkedIn
+  linkedinAction String?      // "connection_sent", "message_sent", "connection_accepted"
+
+  // Résultat
+  outcome     String?
+
+  // Relations
+  contact     Contact         @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId   String
+
+  createdAt   DateTime        @default(now())
+}
+
+// Log des emails envoyés
+model EmailLog {
+  id            String      @id @default(cuid())
+  subject       String
+  body          String
+  templateUsed  String?
+
+  // Statut SendGrid
+  sendgridId    String?
+  status        EmailStatus @default(PENDING)
+
+  // Tracking
+  openedAt      DateTime?
+  clickedAt     DateTime?
+
+  // Relations
+  contact       Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId     String
+
+  campaign      Campaign?   @relation(fields: [campaignId], references: [id])
+  campaignId    String?
+
+  sentAt        DateTime?
+  createdAt     DateTime    @default(now())
+}
+
+// Campagnes d'outreach
+model Campaign {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+
+  // Type de campagne
+  type        CampaignType @default(EMAIL)
+
+  // Contenu
+  subject     String?   // Sujet email ou titre message LinkedIn
+  template    String?   // Template du message avec variables {{firstName}}, {{company}}, etc.
+
+  // Livre blanc attaché
+  whitepaperId String?
+  whitepaper   Whitepaper? @relation(fields: [whitepaperId], references: [id])
+
+  // Statut
+  status      CampaignStatus @default(DRAFT)
+
+  // Stats
+  totalSent   Int       @default(0)
+  totalOpened Int       @default(0)
+  totalClicked Int      @default(0)
+  totalReplied Int      @default(0)
+
+  // Relations
+  companies   CampaignCompany[]
+  emailLogs   EmailLog[]
+
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Table de liaison Campaign <-> Company
+model CampaignCompany {
+  id          String    @id @default(cuid())
+  campaign    Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId  String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   String
+
+  createdAt   DateTime  @default(now())
+
+  @@unique([campaignId, companyId])
+}
+
+// Livres blancs / Ressources
+model Whitepaper {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  fileName    String
+  fileUrl     String    // URL du fichier (stocké sur S3, Cloudinary, etc.)
+  fileSize    Int?      // en bytes
+
+  // Tracking
+  downloads   Int       @default(0)
+
+  // Relations
+  campaigns   Campaign[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Templates de messages (pour réutilisation)
+model MessageTemplate {
+  id          String        @id @default(cuid())
+  name        String
+  channel     Channel
+  subject     String?       // Pour les emails
+  content     String        // Contenu avec variables {{firstName}}, {{company}}, etc.
+
+  // Catégorie
+  category    String?       // "premier_contact", "relance", "livre_blanc", etc.
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+// Enums
+enum CompanyStatus {
+  IDENTIFIED    // Entreprise identifiée
+  RESEARCHING   // En cours de recherche de contacts
+  CONTACTED     // Premier contact établi
+  ENGAGED       // En discussion
+  OPPORTUNITY   // Opportunité qualifiée
+  CUSTOMER      // Client
+  LOST          // Perdu
+}
+
+enum ContactStatus {
+  NEW           // Nouveau contact
+  RESEARCHING   // En recherche d'infos
+  TO_CONTACT    // À contacter
+  CONTACTED     // Contacté
+  RESPONDED     // A répondu
+  MEETING       // RDV planifié
+  QUALIFIED     // Qualifié
+  NOT_INTERESTED // Pas intéressé
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum InteractionType {
+  NOTE
+  CALL
+  EMAIL
+  LINKEDIN_CONNECTION
+  LINKEDIN_MESSAGE
+  MEETING
+  OTHER
+}
+
+enum Channel {
+  EMAIL
+  LINKEDIN
+  PHONE
+  OTHER
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  FAILED
+}
+
+enum CampaignType {
+  EMAIL
+  LINKEDIN
+  MULTI_CHANNEL
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
