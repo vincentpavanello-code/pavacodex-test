@@ -3,8 +3,11 @@ import { companyStatusColors, companyStatusLabels, priorityColors, priorityLabel
 import Link from 'next/link'
 import { Building2, Plus, Search, Filter, ExternalLink } from 'lucide-react'
 import { CompanyActions } from './CompanyActions'
+import type { Company } from '@prisma/client'
 
-async function getCompanies() {
+type CompanyWithCount = Company & { _count: { contacts: number } }
+
+async function getCompanies(): Promise<CompanyWithCount[]> {
   return db.company.findMany({
     include: {
       _count: {
