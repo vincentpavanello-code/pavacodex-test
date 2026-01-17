@@ -46,10 +46,10 @@ export default async function Dashboard() {
   const stats = await getStats()
 
   const statusCounts = {
-    opportunities: stats.companiesByStatus.find(s => s.status === 'OPPORTUNITY')?._count || 0,
-    engaged: stats.companiesByStatus.find(s => s.status === 'ENGAGED')?._count || 0,
-    contacted: stats.companiesByStatus.find(s => s.status === 'CONTACTED')?._count || 0,
-    customers: stats.companiesByStatus.find(s => s.status === 'CUSTOMER')?._count || 0,
+    opportunities: stats.companiesByStatus.find((s: { status: string; _count: number }) => s.status === 'OPPORTUNITY')?._count || 0,
+    engaged: stats.companiesByStatus.find((s: { status: string; _count: number }) => s.status === 'ENGAGED')?._count || 0,
+    contacted: stats.companiesByStatus.find((s: { status: string; _count: number }) => s.status === 'CONTACTED')?._count || 0,
+    customers: stats.companiesByStatus.find((s: { status: string; _count: number }) => s.status === 'CUSTOMER')?._count || 0,
   }
 
   return (
@@ -179,7 +179,7 @@ export default async function Dashboard() {
               </p>
             ) : (
               <div className="space-y-3">
-                {stats.recentContacts.map((contact) => (
+                {stats.recentContacts.map((contact: { id: string; firstName: string; lastName: string; jobTitle: string | null; company: { name: string } }) => (
                   <div key={contact.id} className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
                       <span className="text-sm font-medium text-gray-600">

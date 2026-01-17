@@ -3,14 +3,8 @@ import { contactStatusColors, contactStatusLabels } from '@/lib/utils'
 import Link from 'next/link'
 import { Users, Plus, Search, Filter, Mail, Linkedin, Building2 } from 'lucide-react'
 import { ContactActions } from './ContactActions'
-import type { Contact } from '@prisma/client'
 
-type ContactWithRelations = Contact & {
-  company: { id: string; name: string }
-  _count: { interactions: number; emailsSent: number }
-}
-
-async function getContacts(): Promise<ContactWithRelations[]> {
+async function getContacts() {
   return db.contact.findMany({
     include: {
       company: {
