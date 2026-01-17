@@ -4,7 +4,8 @@
   "description": "Plateforme ABM pour Mister IA - Gestion de prospects et campagnes personnalisées",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint",
     "db:push": "prisma db push",
